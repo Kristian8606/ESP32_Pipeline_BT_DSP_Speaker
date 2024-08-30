@@ -1,7 +1,4 @@
-# Classic Bluetooth Sink Pipeline
-
-- [中文版本](./README_CN.md)
-- Basic Example: ![alt text](../../../docs/_static/level_basic.png "Basic Example")
+# Classic Bluetooth Sink Pipeline width DSP iir filter
 
 
 ## Example Brief
@@ -12,7 +9,7 @@ This example demonstrates how to use the Classic Bluetooth sink of the ESP-ADF t
 The pipeline for the development board to receive voice data and decode it for playback is as follows:
 
 ```
-[Bluetooth] ---> bt_stream_reader ---> i2s_stream_writer ---> [codec_chip]
+[Bluetooth]-->bt_stream_reader-->DspProcessor-->i2s_stream_writer-->[codec_chip]
 ```
 
 

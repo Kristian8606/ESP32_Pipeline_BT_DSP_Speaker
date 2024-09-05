@@ -166,3 +166,13 @@ static struct iir_filt iir5050Hz;
      calcBiquad(bq_type_peak, 2000.0/44100, 1.0, 12.0, &iir5050Hz);
 
  }
+/*
+static float process(float in) {
+    double out = in * a0 + z1;
+    z1 = in * a1 + z2 - b1 * out;
+    z2 = in * a2 - b2 * out;
+    printf("process %f\n",out);
+    return out;
+}
+
+*/

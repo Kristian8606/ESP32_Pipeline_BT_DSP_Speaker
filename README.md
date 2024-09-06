@@ -1,4 +1,4 @@
-# Classic Bluetooth Sink Pipeline with DSP iir filter
+# Classic Bluetooth Sink Pipeline width DSP iir filter
 
 
 ## Example Brief

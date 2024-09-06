@@ -10,6 +10,12 @@ struct iir_filt {
    float in_z2;
    float out_z1;
    float out_z2;
+   
+   float in_z1c;
+   float in_z2c;
+   float out_z1c;
+   float out_z2c;
+   
    float a0[4];
    float a1[4];
    float a2[4];
@@ -149,9 +155,48 @@ static struct iir_filt conf_231hz_peak = {
 	.b2 = { 0.3332662103970156, 0.574011286049052,    0.9879677917275108 , 0.690559423196119}
 	 
 }; 	 
- 
+ static struct iir_filt conf_200hz_test = {
+	//index0 = 16k, index1 = 32k, index 2 = 44k1, index 3 = 48k
+	.a0 = {  0.6666331051985078, 0.7870056430245259,  0.9812039070614107, 0.8452797115980594},
+	.a1 = { -0.9427615784986199, -1.4541968111224874, -1.9534836262586168 , -1.6329550077414818},
+	.a2 = { 0.6666331051985078, 0.7870056430245259,   0.9730730773412465 , 0.8452797115980594},
+	.b1 = { -0.9427615784986199, -1.4541968111224874, -1.9534836262586168 , -1.6329550077414818},
+	.b2 = { 0.3332662103970156, 0.574011286049052,    0.9542769844026571, 0.690559423196119}
+	 
+}; 	 
 
-static float process_iir (float inSampleF, struct iir_filt * config) {
+static float process_iir_ch_1 (float inSampleF, struct iir_filt * config) {
+	
+	
+	float outSampleF =
+	(* config).a0[fs] * inSampleF
+	+ (* config).a1[fs] * (* config).in_z1
+	+ (* config).a2[fs] * (* config).in_z2
+	- (* config).b1[fs] * (* config).out_z1
+	- (* config).b2[fs] * (* config).out_z2;
+	(* config).in_z2 = (* config).in_z1;
+	(* config).in_z1 = inSampleF;
+	(* config).out_z2 = (* config).out_z1;
+	(* config).out_z1 = outSampleF;
+	return outSampleF;
+}
+
+static float process_iir_ch_2 (float inSampleF, struct iir_filt * config) {
+	
+	float outSampleF =
+	(* config).a0[fs] * inSampleF
+	+ (* config).a1[fs] * (* config).in_z1c
+	+ (* config).a2[fs] * (* config).in_z2c
+	- (* config).b1[fs] * (* config).out_z1c
+	- (* config).b2[fs] * (* config).out_z2c;
+	(* config).in_z2c = (* config).in_z1c;
+	(* config).in_z1c = inSampleF;
+	(* config).out_z2c = (* config).out_z1c;
+	(* config).out_z1c = outSampleF;
+	return outSampleF;
+}
+static float process_iir_mono(float inSampleF, struct iir_filt * config) {
+	
 	float outSampleF =
 	(* config).a0[fs] * inSampleF
 	+ (* config).a1[fs] * (* config).in_z1
@@ -182,24 +227,22 @@ static void process_data_mono(char * data, size_t item_size) {
 		
 		//process bass speaker
 
-		float lowsample = process_iir(insample, &conf_45_hp);
-	    lowsample = process_iir(lowsample, &conf_50_peak);
-		lowsample = process_iir(lowsample, &conf_150Hz_lp_Q_05);
-		lowsample = process_iir(lowsample, &conf_150Hz_lp_Q_1_3);
+		float lowsample = process_iir_mono(insample, &conf_45_hp);
+	    lowsample = process_iir_mono(lowsample, &conf_50_peak);
+	    lowsample = process_iir_mono(lowsample, &conf_99_5_peak);
+	    lowsample = process_iir_mono(lowsample, &conf_122_5hz_peak);
+		lowsample = process_iir_mono(lowsample, &conf_150Hz_lp_Q_05);
+		lowsample = process_iir_mono(lowsample, &conf_150Hz_lp_Q_1_3);
 		//process bass speaker EQ
-		lowsample = process_iir(lowsample, &conf_99_5_peak);
-		lowsample = process_iir(lowsample, &conf_122_5hz_peak);
-		
 
-		
 		//process tweeter lowpass
-		float highsample = process_iir(insample, &conf_200_hp_Q0_5);
-		highsample = process_iir(highsample, &conf_200_hp_Q1_3);
+		float highsample = process_iir_mono(insample, &conf_200_hp_Q0_5);
+		highsample = process_iir_mono(highsample, &conf_200_hp_Q1_3);
 		//process tweeter EQ
-		highsample = process_iir(highsample, &conf_189hz_peak);
-		highsample = process_iir(highsample, &conf_231hz_peak);
-		highsample = process_iir(highsample, &conf_2775hz_peak);
-		highsample = process_iir(highsample, &conf_5274_peak);
+		highsample = process_iir_mono(highsample, &conf_189hz_peak);
+		highsample = process_iir_mono(highsample, &conf_231hz_peak);
+		highsample = process_iir_mono(highsample, &conf_2775hz_peak);
+		highsample = process_iir_mono(highsample, &conf_5274_peak);
 		
 		//restore two outputsamples lowsample & highsample to outputbuffer
 		*outsample = (int16_t) lowsample ;//*0.6;
@@ -207,6 +250,40 @@ static void process_data_mono(char * data, size_t item_size) {
 		*outsample = (int16_t) highsample;
 		outsample++;		
 		
+	
+	}
+
+}
+
+static void process_data_stereo(char * data, size_t item_size) {
+	
+	int16_t * samples = (int16_t *) data;
+	int16_t * outsample = (int16_t *) data;
+	
+	for (int i=0; i<item_size; i=i+4) {
+	
+		//restore input samples and make monosum
+		float insample = (float) *samples;
+		samples++;
+		float insample2 = (float) *samples;
+		samples++;
+		
+		
+		float sample_ch_1 = process_iir_ch_1(insample, &conf_45_hp);
+	//    sample_ch_1 = process_iir_ch_1(sample_ch_1, &conf_50_peak);
+	//	sample_ch_1 = process_iir_ch_1(sample_ch_1, &conf_200hz_test);
+
+		
+		float sample_ch_2 = process_iir_ch_2(insample2, &conf_45_hp);
+	//	sample_ch_2 = process_iir_ch_2(sample_ch_2, &conf_50_peak);
+	//	sample_ch_2 = process_iir_ch_2(sample_ch_2, &conf_200hz_test);
+	//	sample_ch_2 = process_iir_ch_2(sample_ch_2, &conf_2775hz_peak);
+	//	sample_ch_2 = process_iir_ch_2(sample_ch_2, &conf_189hz_peak);
+
+		*outsample = (int16_t) sample_ch_1 ;//*0.6;
+		outsample++;
+		*outsample = (int16_t) sample_ch_2;
+		outsample++;	
 	
 	}
 

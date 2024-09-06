@@ -27,7 +27,8 @@
 //#include "equalizer.h"
 #include <math.h>
 
-#include "dsp.h"
+//#include "dsp.h"
+#include "dsp_biquad.h"
 
 static const char *TAG = "BLUETOOTH_EXAMPLE";
 
@@ -77,8 +78,11 @@ audio_element_err_t Dsp_write(audio_element_handle_t el, char *buf, int len, uns
 static audio_element_err_t Dsp_process(audio_element_handle_t self, char *inbuf, int len)
 	{
 	audio_element_input(self, (char *)DspBuf, len);
+	
 	// ********** PROCESS the buffer with DSP IIR !!
+	
 	process_data_mono(DspBuf, len);
+	//process_data_stereo(DspBuf, len);
 	
 	int ret = audio_element_output(self, (char *)DspBuf, len);
 	return (audio_element_err_t)ret;
@@ -89,7 +93,6 @@ static esp_err_t Dsp_destroy(audio_element_handle_t self)
 	return ESP_OK;
 	}
 	
-
 
 void app_main(void)
 {
@@ -103,6 +106,7 @@ void app_main(void)
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
     }
+		create_biquad();
 
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
@@ -129,7 +133,7 @@ void app_main(void)
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
     
-    i2s_stream_set_clk(i2s_stream_writer, 44100, 16, 2);
+    i2s_stream_set_clk(i2s_stream_writer, 44100, 24, 2);
 
     ESP_LOGI(TAG, "[3.2] Get Bluetooth stream");
     bt_stream_reader = bluetooth_service_create_stream();
@@ -206,7 +210,7 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[ 6 ] Start audio_pipeline");
     audio_pipeline_run(pipeline);
-  
+  	
 
     ESP_LOGI(TAG, "[ 7 ] Listen for all pipeline events");
     while (1) {

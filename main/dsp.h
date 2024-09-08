@@ -6,15 +6,15 @@ extern uint8_t fs;
 
 
 struct iir_filt {
-   float in_z1;
-   float in_z2;
-   float out_z1;
-   float out_z2;
+    float in_z1 = 0.0;
+    float in_z2 = 0.0;
+   float out_z1 = 0.0;
+   float out_z2 = 0.0;
    
-   float in_z1c;
-   float in_z2c;
-   float out_z1c;
-   float out_z2c;
+    float in_z1c = 0.0;
+    float in_z2c = 0.0;
+   float out_z1c = 0.0;
+   float out_z2c = 0.0;
    
    float a0[4];
    float a1[4];

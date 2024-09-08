@@ -106,7 +106,6 @@ void app_main(void)
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
     }
-		create_biquad();
 
     esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set(TAG, ESP_LOG_DEBUG);
@@ -155,7 +154,8 @@ void app_main(void)
 	DspCfg.task_prio = (5);
 	DspCfg.task_core = (1); 
 	DspCfg.out_rb_size = (8 * 1024);
-
+	
+	create_biquad();
 	
    /*
     eq_cfg.out_rb_size = EQUALIZER_RINGBUFFER_SIZE;

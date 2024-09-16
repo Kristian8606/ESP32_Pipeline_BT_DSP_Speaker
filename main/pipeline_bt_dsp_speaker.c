@@ -24,15 +24,14 @@
 #include "filter_resample.h"
 #include "audio_mem.h"
 #include "bluetooth_service.h"
-//#include "equalizer.h"
 #include <math.h>
+//#include "esp_dsp.h"
 
-//#include "dsp.h"
-#include "dsp_biquad.h"
+#include "Biquad.h"
+uint8_t fs;
 
 static const char *TAG = "BLUETOOTH_EXAMPLE";
 
-uint8_t fs;
 
 static void bt_app_avrc_ct_cb(esp_avrc_ct_cb_event_t event, esp_avrc_ct_cb_param_t *p_param)
 {
@@ -132,7 +131,7 @@ void app_main(void)
     i2s_cfg.type = AUDIO_STREAM_WRITER;
     i2s_stream_writer = i2s_stream_init(&i2s_cfg);
     
-    i2s_stream_set_clk(i2s_stream_writer, 44100, 24, 2);
+    i2s_stream_set_clk(i2s_stream_writer, 44100, 16, 2);
 
     ESP_LOGI(TAG, "[3.2] Get Bluetooth stream");
     bt_stream_reader = bluetooth_service_create_stream();
@@ -140,7 +139,7 @@ void app_main(void)
 	
 	
     
-    audio_element_cfg_t DspCfg = DEFAULT_AUDIO_ELEMENT_CONFIG();
+    audio_element_cfg_t DspCfg; // = DEFAULT_AUDIO_ELEMENT_CONFIG();
 	memset(&DspCfg, 0, sizeof(audio_element_cfg_t));
 	DspCfg.destroy = Dsp_destroy;
 	DspCfg.process = Dsp_process;
@@ -148,14 +147,14 @@ void app_main(void)
 	DspCfg.write = Dsp_write; // why are these needed if they are not called?
 	DspCfg.open = Dsp_open;
 	DspCfg.close = Dsp_close;
-	DspCfg.buffer_len = (1024);
+	DspCfg.buffer_len = (4096);
 	DspCfg.tag = "DSPProcessor";
 	DspCfg.task_stack = (2 * 1024);
-	DspCfg.task_prio = (5);
+	DspCfg.task_prio = (23);
 	DspCfg.task_core = (1); 
 	DspCfg.out_rb_size = (8 * 1024);
 	
-	create_biquad();
+	
 	
    /*
     eq_cfg.out_rb_size = EQUALIZER_RINGBUFFER_SIZE;
@@ -167,6 +166,7 @@ void app_main(void)
   
      ESP_LOGI(TAG, "[3.2B] Intitialize DSP Element");
      DspProcessor = audio_element_init(&DspCfg);
+     create_biquad();
 	
     ESP_LOGI(TAG, "[3.2] Register all elements to audio pipeline");
     audio_pipeline_register(pipeline, bt_stream_reader, "bt");
@@ -246,7 +246,7 @@ void app_main(void)
 #endif
             continue;
         }
-		/*
+		
         if ((msg.source_type == PERIPH_ID_TOUCH || msg.source_type == PERIPH_ID_BUTTON || msg.source_type == PERIPH_ID_ADC_BTN)
             && (msg.cmd == PERIPH_TOUCH_TAP || msg.cmd == PERIPH_BUTTON_PRESSED || msg.cmd == PERIPH_ADC_BUTTON_PRESSED)) {
 
@@ -264,7 +264,7 @@ void app_main(void)
                 periph_bluetooth_prev(bt_periph);
             }
         }
-*/
+
         /* Stop when the Bluetooth is disconnected or suspended */
         if (msg.source_type == PERIPH_ID_BLUETOOTH
             && msg.source == (void *)bt_periph) {
